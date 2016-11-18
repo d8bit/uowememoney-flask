@@ -15,6 +15,11 @@ class Expense(db.Model):
     created_at = db.Column(db.Date, primary_key=True)
     updated_at = db.Column(db.Date, primary_key=True)
 
+    def __init__(self, name, amount, paid_by):
+        self.name = name
+        self.amount = amount
+        self.paid_by = paid_by
+
     def serialize(self):
         return {
                 'id': self.id,
