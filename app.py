@@ -1,41 +1,42 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, abort, session
 from flask_sqlalchemy import SQLAlchemy
 
 from User import User
 from Expense import Expense
+from Middleware import Middleware
 
 from datetime import datetime
-
-# import hashlib
 import bcrypt
-import base64
+
 
 app = Flask(__name__)
+app.wsgi_app = Middleware(app.wsgi_app)
+app.secret_key = '$2a$12$5WzlzoUaY0kO2Z2WWKeXe.'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/money'
 db = SQLAlchemy()
-
-
-@app.route("/")
-def index():
-    return 'Flask roolz'
 
 @app.route("/login", methods=['POST'])
 def login():
     email = request.form['email']
     password = request.form['password']
-    # password = hashlib.new('sha1', password)
-    # password = password.hexdigest()
-    salt = bcrypt.gensalt()
-    salt = '5SYhnwwHt3vwilmLAYNqA92bGtvoCfVU9cAdCyru0I4='
-    salt = base64.b64encode(salt)
-    return salt
-    hash = bcrypt.hashpw('test', salt)
-    return hash
-    user = User.query.filter_by(email=request.form['email'], password=password).first();
+    user = User.query.filter_by(email=request.form['email']).first()
     if None != user:
-        return user.name
+        hash = bcrypt.hashpw(password, user.password)
+        if hash == user.password:
+            session['username'] = user.email
+            response = user.serialize()
+            return jsonify(response)
 
-    return 'User not found'
+    abort(401)
+
+@app.route('/logout/<int:user_id>')
+def logout(user_id):
+    user = User.query.filter_by(id=user_id).first()
+    if None != user:
+        if 'username' in session:
+            session.pop('username', None)
+            return ''
+    abort(401)
 
 @app.route("/users")
 def users_list():
@@ -83,6 +84,14 @@ def new_expense(request):
 
     return 'done'
 
+@app.errorhandler(404)
+def page_not_found(error):
+    return 'Page not found', 404
+
+def userLoggedIn():
+    if 'username' in session:
+        return True
+    return False
 
 db.init_app(app)
 if __name__ == "__main__":

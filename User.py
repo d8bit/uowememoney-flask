@@ -8,6 +8,9 @@ class User(db.Model):
     name = db.Column(db.Unicode, unique=True)
     email = db.Column(db.Unicode, unique=True)
     password = db.Column(db.Unicode, unique=False)
+    remember_token = db.Column(db.Unicode)
+    created_at = db.Column(db.Unicode)
+    updated_at = db.Column(db.Unicode)
 
     def __init__(self, name, email):
         self.name = name
@@ -17,6 +20,7 @@ class User(db.Model):
     def serialize(self):
         return {
                 'id': self.id,
-                'name': self.name
+                'name': self.name,
+                'email': self.email
                 }
 
