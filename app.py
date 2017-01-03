@@ -26,21 +26,23 @@ def login():
             response = user.serialize()
             return jsonify(response)
 
-    abort(401)
+    return 'Unauthorized', 401
 
-@app.route('/logout/<int:user_id>')
-def logout(user_id):
-    user = User.query.filter_by(id=user_id).first()
+@app.route('/logout')
+def logout():
+    token = request.headers.get('token')
+    user = User.query.filter_by(remember_token=token).first()
     if None != user:
         user.remember_token = ''
         db.session.commit()
+        return ''
 
-    abort(401)
+    return 'Unauthorized', 401
 
 @app.route("/users")
 def users_list():
     if not authorized():
-        return 'Unauthorized', 403
+        return 'Unauthorized', 401
     users = User.query.all()
     response = []
     for user in users:
@@ -51,7 +53,7 @@ def users_list():
 @app.route("/expenses", methods=['GET', 'POST'])
 def expenses():
     if not authorized():
-        return 'Unauthorized', 403
+        return 'Unauthorized', 401
     if 'POST' == request.method:
         response = new_expense(request)
 
@@ -85,7 +87,7 @@ def new_expense(request):
     db.session.add(expense)
     db.session.commit()
 
-    return 'done'
+    return ''
 
 def authorized():
     token = request.headers.get('token')
