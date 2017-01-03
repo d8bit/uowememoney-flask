@@ -3,14 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 
 from User import User
 from Expense import Expense
-from Middleware import Middleware
 
 from datetime import datetime
 import bcrypt
 
 
 app = Flask(__name__)
-app.wsgi_app = Middleware(app.wsgi_app)
 app.secret_key = '$2a$12$5WzlzoUaY0kO2Z2WWKeXe.'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/money'
 db = SQLAlchemy()
@@ -23,7 +21,8 @@ def login():
     if None != user:
         hash = bcrypt.hashpw(password, user.password)
         if hash == user.password:
-            session['username'] = user.email
+            user.remember_token = bcrypt.gensalt()
+            db.session.commit()
             response = user.serialize()
             return jsonify(response)
 
@@ -33,13 +32,15 @@ def login():
 def logout(user_id):
     user = User.query.filter_by(id=user_id).first()
     if None != user:
-        if 'username' in session:
-            session.pop('username', None)
-            return ''
+        user.remember_token = ''
+        db.session.commit()
+
     abort(401)
 
 @app.route("/users")
 def users_list():
+    if not authorized():
+        return 'Unauthorized', 403
     users = User.query.all()
     response = []
     for user in users:
@@ -49,6 +50,8 @@ def users_list():
 
 @app.route("/expenses", methods=['GET', 'POST'])
 def expenses():
+    if not authorized():
+        return 'Unauthorized', 403
     if 'POST' == request.method:
         response = new_expense(request)
 
@@ -84,14 +87,16 @@ def new_expense(request):
 
     return 'done'
 
+def authorized():
+    token = request.headers.get('token')
+    user = User.query.filter_by(remember_token=token).first()
+    if None != user:
+        return True
+    return False
+
 @app.errorhandler(404)
 def page_not_found(error):
     return 'Page not found', 404
-
-def userLoggedIn():
-    if 'username' in session:
-        return True
-    return False
 
 db.init_app(app)
 if __name__ == "__main__":
