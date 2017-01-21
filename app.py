@@ -8,11 +8,13 @@ from datetime import datetime
 import bcrypt
 
 
+# Database conection
 app = Flask(__name__)
 app.secret_key = '$2a$12$5WzlzoUaY0kO2Z2WWKeXe.'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/money'
 db = SQLAlchemy()
 
+# Login
 @app.route("/login", methods=['POST'])
 def login():
     email = request.form['email']
@@ -28,6 +30,7 @@ def login():
 
     return 'Unauthorized', 401
 
+# Logout
 @app.route('/logout')
 def logout():
     token = request.headers.get('token')
@@ -39,6 +42,7 @@ def logout():
 
     return 'Unauthorized', 401
 
+# List users
 @app.route("/users")
 def users_list():
     if not authorized():
@@ -50,6 +54,7 @@ def users_list():
 
     return jsonify(response)
 
+# Expenses
 @app.route("/expenses", methods=['GET', 'POST'])
 def expenses():
     if not authorized():
@@ -62,6 +67,7 @@ def expenses():
 
     return jsonify(response)
 
+# Get expenses from logged user
 def list_expenses():
     expenses = Expense.query.all()
     response = []
@@ -70,6 +76,7 @@ def list_expenses():
 
     return response
 
+# Add new expense
 def new_expense(request):
     for (key, value) in request.form.items():
         if "" == value:
@@ -89,6 +96,7 @@ def new_expense(request):
 
     return ''
 
+# Check logged in
 def authorized():
     token = request.headers.get('token')
     user = User.query.filter_by(remember_token=token).first()
