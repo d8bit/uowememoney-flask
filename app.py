@@ -7,28 +7,37 @@ from Expense import Expense
 from datetime import datetime
 import bcrypt
 
+# Needed to allow cross-origin requests
+from flask_cors import CORS, cross_origin
+
 
 # Database conection
 app = Flask(__name__)
+# CORS(app)
+cors = CORS(app, resources={r"*": {"origins": "*"}})
 app.secret_key = '$2a$12$5WzlzoUaY0kO2Z2WWKeXe.'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/money'
 db = SQLAlchemy()
 
 # Login
-@app.route("/login", methods=['POST'])
+@app.route("/login", methods=['OPTIONS', 'POST'])
 def login():
-    email = request.form['email']
-    password = request.form['password']
-    user = User.query.filter_by(email=request.form['email']).first()
-    if None != user:
-        hash = bcrypt.hashpw(password, user.password)
-        if hash == user.password:
-            user.remember_token = bcrypt.gensalt()
-            db.session.commit()
-            response = user.serialize()
-            return jsonify(response)
+    if 'POST' == request.method:
+        email = request.form['email']
+        password = request.form['password']
+        user = User.query.filter_by(email=request.form['email']).first()
+        if None != user:
+            hash = bcrypt.hashpw(password, user.password)
+            if hash == user.password:
+                user.remember_token = bcrypt.gensalt()
+                db.session.commit()
+                response = user.serialize()
+                return jsonify(response), 200
 
-    return 'Unauthorized', 401
+        return 'Unauthorized', 401
+    else:
+        return '', 200
+
 
 # Logout
 @app.route('/logout')
