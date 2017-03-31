@@ -6,6 +6,7 @@ from Expense import Expense
 
 from datetime import datetime
 import bcrypt
+import logging
 
 # Needed to allow cross-origin requests
 from flask_cors import CORS, cross_origin
@@ -13,15 +14,16 @@ from flask_cors import CORS, cross_origin
 
 # Database conection
 app = Flask(__name__)
-# CORS(app)
-cors = CORS(app, resources={r"*": {"origins": "*"}})
+logging.basicConfig(level=logging.INFO)
+CORS(app)
 app.secret_key = '$2a$12$5WzlzoUaY0kO2Z2WWKeXe.'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/money'
 db = SQLAlchemy()
 
 # Login
-@app.route("/login", methods=['OPTIONS', 'POST'])
+@app.route("/login", methods=['POST'])
 def login():
+    logging.getLogger('flask_cors').level = logging.DEBUG
     if 'POST' == request.method:
         email = request.form['email']
         password = request.form['password']
