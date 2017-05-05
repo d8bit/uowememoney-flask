@@ -23,18 +23,17 @@ db = SQLAlchemy()
 # Login
 @app.route("/login", methods=['POST'])
 def login():
+    data = request.get_json()
+
     logging.getLogger('flask_cors').level = logging.DEBUG
-    if 'POST' == request.method:
-        email = request.form['email']
-        password = request.form['password']
-        user = User.query.filter_by(email=request.form['email']).first()
-        if None != user:
-            hash = bcrypt.hashpw(password, user.password)
-            if hash == user.password:
-                user.remember_token = bcrypt.gensalt()
-                db.session.commit()
-                response = user.serialize()
-                return jsonify(response), 200
+    user = User.query.filter_by(email=data['email']).first()
+    if None != user:
+        hash = bcrypt.hashpw(data['password'], user.password)
+        if hash == user.password:
+            user.remember_token = bcrypt.gensalt()
+            db.session.commit()
+            response = user.serialize()
+            return jsonify(response), 200
 
         return 'Unauthorized', 401
     else:
