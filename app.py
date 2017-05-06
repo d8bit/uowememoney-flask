@@ -6,10 +6,16 @@ from Expense import Expense
 
 from datetime import datetime
 import bcrypt
+import logging
+
+# Needed to allow cross-origin requests
+from flask_cors import CORS, cross_origin
 
 
 # Database conection
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+CORS(app)
 app.secret_key = '$2a$12$5WzlzoUaY0kO2Z2WWKeXe.'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/money'
 db = SQLAlchemy()
@@ -17,18 +23,21 @@ db = SQLAlchemy()
 # Login
 @app.route("/login", methods=['POST'])
 def login():
-    email = request.form['email']
-    password = request.form['password']
-    user = User.query.filter_by(email=request.form['email']).first()
+    data = request.get_json()
+
+    user = User.query.filter_by(email=data['email']).first()
     if None != user:
-        hash = bcrypt.hashpw(password, user.password)
+        hash = bcrypt.hashpw(data['password'], user.password)
         if hash == user.password:
             user.remember_token = bcrypt.gensalt()
             db.session.commit()
             response = user.serialize()
-            return jsonify(response)
+            return jsonify(response), 200
 
-    return 'Unauthorized', 401
+        return 'Unauthorized', 401
+    else:
+        return '', 200
+
 
 # Logout
 @app.route('/logout')
@@ -78,18 +87,21 @@ def list_expenses():
 
 # Add new expense
 def new_expense(request):
-    for (key, value) in request.form.items():
+    # logging.getLogger('flask_cors').level = logging.DEBUG
+    data = request.get_json()
+    for (key, value) in data.items():
+        print value
         if "" == value:
             return 'Empty value for %s' % (key)
 
-    expense = Expense(request.form['name'], request.form['amount'], request.form['paid_by'])
+    expense = Expense(data['name'], data['amount'], data['paid_by'])
     current_date = datetime.now()
     expense.created_at = current_date.strftime('%Y-%m-%d %H:%M:%S')
 
-    expense.created_by = request.form['created_by']
-    expense.modified_by = request.form['created_by']
-    expense.date = request.form['date']
-    expense.shared = request.form['shared']
+    expense.created_by = data['created_by']
+    expense.modified_by = data['created_by']
+    expense.date = data['date']
+    expense.shared = data['shared']
 
     db.session.add(expense)
     db.session.commit()
