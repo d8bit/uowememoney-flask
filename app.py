@@ -25,7 +25,6 @@ db = SQLAlchemy()
 def login():
     data = request.get_json()
 
-    logging.getLogger('flask_cors').level = logging.DEBUG
     user = User.query.filter_by(email=data['email']).first()
     if None != user:
         hash = bcrypt.hashpw(data['password'], user.password)
@@ -88,18 +87,21 @@ def list_expenses():
 
 # Add new expense
 def new_expense(request):
-    for (key, value) in request.form.items():
+    # logging.getLogger('flask_cors').level = logging.DEBUG
+    data = request.get_json()
+    for (key, value) in data.items():
+        print value
         if "" == value:
             return 'Empty value for %s' % (key)
 
-    expense = Expense(request.form['name'], request.form['amount'], request.form['paid_by'])
+    expense = Expense(data['name'], data['amount'], data['paid_by'])
     current_date = datetime.now()
     expense.created_at = current_date.strftime('%Y-%m-%d %H:%M:%S')
 
-    expense.created_by = request.form['created_by']
-    expense.modified_by = request.form['created_by']
-    expense.date = request.form['date']
-    expense.shared = request.form['shared']
+    expense.created_by = data['created_by']
+    expense.modified_by = data['created_by']
+    expense.date = data['date']
+    expense.shared = data['shared']
 
     db.session.add(expense)
     db.session.commit()
