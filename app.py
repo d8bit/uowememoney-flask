@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify, request, abort, session
 from flask_sqlalchemy import SQLAlchemy
 
@@ -16,7 +17,7 @@ from flask_cors import CORS, cross_origin
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 CORS(app)
-app.secret_key = '$2a$12$5WzlzoUaY0kO2Z2WWKeXe.'
+app.secret_key = os.environ["MONEY_KEY"]
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@127.0.0.1/money'
 db = SQLAlchemy()
 
